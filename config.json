@@ -1,0 +1,29 @@
+{
+  "systemPrompt": "You are playing tic-tac-toe. The board is a 3x3 grid with coordinates from (0,0) at the top-left to (2,2) at the bottom-right. You will be given the current board state and must respond with your move as coordinates in the format 'row,col' (e.g., '1,2'). X goes first, then O alternates. Make strategic moves to win or prevent your opponent from winning.",
+  "models": [
+    {
+      "id": "gpt-4o-mini",
+      "name": "GPT-4o Mini",
+      "apiUrl": "https://api.openai.com/v1/chat/completions",
+      "apiKey": "your-openai-api-key-here"
+    },
+    {
+      "id": "gpt-3.5-turbo",
+      "name": "GPT-3.5 Turbo",
+      "apiUrl": "https://api.openai.com/v1/chat/completions",
+      "apiKey": "your-openai-api-key-here"
+    }
+  ],
+  "tournament": {
+    "rounds": 10,
+    "timeoutMs": 30000,
+    "maxRetries": 3,
+    "backoffMultiplier": 2,
+    "pauseOnConsecutiveFailures": 3
+  },
+  "logging": {
+    "matchesDir": "logs/matches",
+    "outcomesFile": "logs/outcomes.json",
+    "statisticsFile": "logs/statistics.json"
+  }
+}
