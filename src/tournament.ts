@@ -166,7 +166,6 @@ export class TournamentManager {
     const matchups = this.generateMatchups();
     const totalMatches = matchups.length * this.config.tournament.rounds;
     let completedMatches = 0;
-    let consecutiveFailures = 0;
 
     console.log(`🎯 Total matches to play: ${totalMatches}\n`);
 
@@ -174,10 +173,11 @@ export class TournamentManager {
       console.log(`\n🔄 Round ${round}/${this.config.tournament.rounds}`);
 
       for (const { xModel, oModel } of matchups) {
-        let retries = 0;
+        let apiRetries = 0;
         let backoffTime = 1000; // Start with 1 second
+        let matchCompleted = false;
 
-        while (retries <= this.config.tournament.maxRetries) {
+        while (!matchCompleted) {
           try {
             const result = await this.playMatch(xModel, oModel);
 
@@ -199,58 +199,57 @@ export class TournamentManager {
             await this.logger.logOutcome(outcome);
 
             if (!result.invalidReason) {
+              // Valid match completed successfully
               completedMatches++;
-              consecutiveFailures = 0;
+              matchCompleted = true;
               console.log(
                 `✅ Match completed (${completedMatches}/${totalMatches})`
               );
-              break; // Successful match, move to next
             } else {
-              consecutiveFailures++;
-              console.log(
-                `❌ Invalid match (attempt ${retries + 1}/${
-                  this.config.tournament.maxRetries + 1
-                })`
-              );
+              // Invalid match - check if it's a simple invalid move or API error
+              const isInvalidMove = result.invalidReason?.includes("invalid move") || 
+                                   result.invalidReason?.includes("failed to provide a valid move");
+              
+              if (isInvalidMove) {
+                // Simple invalid move - retry immediately without counting as API failure
+                console.log(`🔄 Invalid move, retrying immediately...`);
+                continue;
+              } else {
+                // API error - count as failure
+                apiRetries++;
+                console.log(
+                  `❌ API error (attempt ${apiRetries}/${this.config.tournament.maxRetries}): ${result.invalidReason}`
+                );
 
-              if (
-                consecutiveFailures >=
-                this.config.tournament.pauseOnConsecutiveFailures
-              ) {
-                await this.waitForUserInput();
-                consecutiveFailures = 0;
-              }
+                if (apiRetries >= this.config.tournament.maxRetries) {
+                  console.log(`⏸️  Max retries (${this.config.tournament.maxRetries}) reached. Press Enter to continue...`);
+                  await this.waitForUserInput();
+                  apiRetries = 0; // Reset after user intervention
+                }
 
-              retries++;
-
-              if (retries <= this.config.tournament.maxRetries) {
                 console.log(`⏳ Retrying in ${backoffTime}ms...`);
                 await this.sleep(backoffTime);
                 backoffTime *= this.config.tournament.backoffMultiplier;
               }
             }
           } catch (error) {
+            // Unexpected system error
+            apiRetries++;
             console.log(
-              `💥 Unexpected error: ${
+              `💥 Unexpected error (attempt ${apiRetries}/${this.config.tournament.maxRetries}): ${
                 error instanceof Error ? error.message : String(error)
               }`
             );
-            retries++;
-            consecutiveFailures++;
 
-            if (
-              consecutiveFailures >=
-              this.config.tournament.pauseOnConsecutiveFailures
-            ) {
+            if (apiRetries >= this.config.tournament.maxRetries) {
+              console.log(`⏸️  Max retries (${this.config.tournament.maxRetries}) reached. Press Enter to continue...`);
               await this.waitForUserInput();
-              consecutiveFailures = 0;
+              apiRetries = 0; // Reset after user intervention
             }
 
-            if (retries <= this.config.tournament.maxRetries) {
-              console.log(`⏳ Retrying in ${backoffTime}ms...`);
-              await this.sleep(backoffTime);
-              backoffTime *= this.config.tournament.backoffMultiplier;
-            }
+            console.log(`⏳ Retrying in ${backoffTime}ms...`);
+            await this.sleep(backoffTime);
+            backoffTime *= this.config.tournament.backoffMultiplier;
           }
         }
       }
