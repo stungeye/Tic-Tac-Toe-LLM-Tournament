@@ -124,14 +124,14 @@ export class TournamentManager {
 
     if (!result.invalidReason) {
       result.winner = game.checkWinner() as Player | "draw";
-      
+
       // Set winnerModel for easy programmatic access
       if (result.winner === "X") {
         result.winnerModel = result.X;
       } else if (result.winner === "O") {
         result.winnerModel = result.O;
       }
-      
+
       console.log(
         `  🏆 Result: ${
           result.winner === "draw" ? "Draw" : `${result.winner} wins`
@@ -207,9 +207,12 @@ export class TournamentManager {
               );
             } else {
               // Invalid match - check if it's a simple invalid move or API error
-              const isInvalidMove = result.invalidReason?.includes("invalid move") || 
-                                   result.invalidReason?.includes("failed to provide a valid move");
-              
+              const isInvalidMove =
+                result.invalidReason?.includes("invalid move") ||
+                result.invalidReason?.includes(
+                  "failed to provide a valid move"
+                );
+
               if (isInvalidMove) {
                 // Simple invalid move - retry immediately without counting as API failure
                 console.log(`🔄 Invalid move, retrying immediately...`);
@@ -222,7 +225,9 @@ export class TournamentManager {
                 );
 
                 if (apiRetries >= this.config.tournament.maxRetries) {
-                  console.log(`⏸️  Max retries (${this.config.tournament.maxRetries}) reached. Press Enter to continue...`);
+                  console.log(
+                    `⏸️  Max retries (${this.config.tournament.maxRetries}) reached. Press Enter to continue...`
+                  );
                   await this.waitForUserInput();
                   apiRetries = 0; // Reset after user intervention
                 }
@@ -236,13 +241,15 @@ export class TournamentManager {
             // Unexpected system error
             apiRetries++;
             console.log(
-              `💥 Unexpected error (attempt ${apiRetries}/${this.config.tournament.maxRetries}): ${
-                error instanceof Error ? error.message : String(error)
-              }`
+              `💥 Unexpected error (attempt ${apiRetries}/${
+                this.config.tournament.maxRetries
+              }): ${error instanceof Error ? error.message : String(error)}`
             );
 
             if (apiRetries >= this.config.tournament.maxRetries) {
-              console.log(`⏸️  Max retries (${this.config.tournament.maxRetries}) reached. Press Enter to continue...`);
+              console.log(
+                `⏸️  Max retries (${this.config.tournament.maxRetries}) reached. Press Enter to continue...`
+              );
               await this.waitForUserInput();
               apiRetries = 0; // Reset after user intervention
             }
