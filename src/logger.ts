@@ -88,8 +88,8 @@ export class Logger {
 
     // Process outcomes
     for (const outcome of outcomes) {
-      const xStats = modelStats.get(outcome.xModel);
-      const oStats = modelStats.get(outcome.oModel);
+      const xStats = modelStats.get(outcome.X);
+      const oStats = modelStats.get(outcome.O);
 
       if (!xStats || !oStats) continue;
 
@@ -98,16 +98,16 @@ export class Logger {
       oStats.totalMatches++;
 
       // Initialize opponent stats if needed
-      if (!xStats.opponents[outcome.oModel]) {
-        xStats.opponents[outcome.oModel] = {
+      if (!xStats.opponents[outcome.O]) {
+        xStats.opponents[outcome.O] = {
           wins: 0,
           losses: 0,
           draws: 0,
           invalid: 0,
         };
       }
-      if (!oStats.opponents[outcome.xModel]) {
-        oStats.opponents[outcome.xModel] = {
+      if (!oStats.opponents[outcome.X]) {
+        oStats.opponents[outcome.X] = {
           wins: 0,
           losses: 0,
           draws: 0,
@@ -119,23 +119,23 @@ export class Logger {
       if (outcome.winner === "invalid") {
         xStats.invalidGames++;
         oStats.invalidGames++;
-        xStats.opponents[outcome.oModel].invalid++;
-        oStats.opponents[outcome.xModel].invalid++;
+        xStats.opponents[outcome.O].invalid++;
+        oStats.opponents[outcome.X].invalid++;
       } else if (outcome.winner === "draw") {
         xStats.draws++;
         oStats.draws++;
-        xStats.opponents[outcome.oModel].draws++;
-        oStats.opponents[outcome.xModel].draws++;
+        xStats.opponents[outcome.O].draws++;
+        oStats.opponents[outcome.X].draws++;
       } else if (outcome.winner === "X") {
         xStats.wins++;
         oStats.losses++;
-        xStats.opponents[outcome.oModel].wins++;
-        oStats.opponents[outcome.xModel].losses++;
+        xStats.opponents[outcome.O].wins++;
+        oStats.opponents[outcome.X].losses++;
       } else if (outcome.winner === "O") {
         xStats.losses++;
         oStats.wins++;
-        xStats.opponents[outcome.oModel].losses++;
-        oStats.opponents[outcome.xModel].wins++;
+        xStats.opponents[outcome.O].losses++;
+        oStats.opponents[outcome.X].wins++;
       }
     }
 

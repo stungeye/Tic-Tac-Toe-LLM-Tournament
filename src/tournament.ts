@@ -60,8 +60,8 @@ export class TournamentManager {
 
     const result: MatchResult = {
       matchId,
-      xModel: xModel.id,
-      oModel: oModel.id,
+      X: xModel.id,
+      O: oModel.id,
       winner: "draw",
       moves: [],
       conversations: [],
@@ -124,6 +124,14 @@ export class TournamentManager {
 
     if (!result.invalidReason) {
       result.winner = game.checkWinner() as Player | "draw";
+      
+      // Set winnerModel for easy programmatic access
+      if (result.winner === "X") {
+        result.winnerModel = result.X;
+      } else if (result.winner === "O") {
+        result.winnerModel = result.O;
+      }
+      
       console.log(
         `  🏆 Result: ${
           result.winner === "draw" ? "Draw" : `${result.winner} wins`
@@ -179,9 +187,10 @@ export class TournamentManager {
             // Log the outcome
             const outcome: MatchOutcome = {
               matchId: result.matchId,
-              xModel: result.xModel,
-              oModel: result.oModel,
+              X: result.X,
+              O: result.O,
               winner: result.invalidReason ? "invalid" : result.winner,
+              winnerModel: result.winnerModel,
               invalidReason: result.invalidReason,
               matchFile: this.logger.getMatchFileName(result.matchId),
               timestamp: result.timestamp,

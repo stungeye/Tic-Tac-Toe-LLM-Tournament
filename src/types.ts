@@ -49,9 +49,10 @@ export interface APIConversation {
 
 export interface MatchResult {
   matchId: string;
-  xModel: string;
-  oModel: string;
+  X: string;
+  O: string;
   winner: Player | "draw";
+  winnerModel?: string;
   moves: GameMove[];
   conversations: APIConversation[];
   duration: number;
@@ -61,9 +62,10 @@ export interface MatchResult {
 
 export interface MatchOutcome {
   matchId: string;
-  xModel: string;
-  oModel: string;
+  X: string;
+  O: string;
   winner: Player | "draw" | "invalid";
+  winnerModel?: string;
   invalidReason?: string;
   matchFile: string;
   timestamp: number;
