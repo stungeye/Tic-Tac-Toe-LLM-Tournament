@@ -52,7 +52,7 @@ async function main(): Promise<void> {
     const tournament = new TournamentManager(config);
     await tournament.initialize();
     await tournament.runTournament();
-    
+
     // Ensure clean exit
     process.exit(0);
   } catch (error) {
