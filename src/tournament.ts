@@ -31,6 +31,7 @@ export class TournamentManager {
   private generateMatchups(): Array<{ xModel: Model; oModel: Model }> {
     const matchups: Array<{ xModel: Model; oModel: Model }> = [];
 
+    // Generate all unique pairs, with each pair playing both ways (A vs B and B vs A)
     for (let i = 0; i < this.models.length; i++) {
       for (let j = 0; j < this.models.length; j++) {
         if (i !== j) {
