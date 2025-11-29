@@ -64,6 +64,15 @@ export class Logger {
     }
   }
 
+  async loadMatchResult(matchFile: string): Promise<MatchResult | null> {
+    try {
+      const data = await fs.readFile(matchFile, "utf8");
+      return JSON.parse(data);
+    } catch (error) {
+      return null;
+    }
+  }
+
   async generateStatistics(
     models: string[],
     expectedTotalMatches?: number
@@ -82,6 +91,14 @@ export class Logger {
         draws: 0,
         invalidGames: 0,
         winRate: 0,
+        invalidMoves: {
+          blank: 0,
+          invalid_syntax: 0,
+          outside_board: 0,
+          occupied_cell: 0,
+          negative_coordinates: 0,
+          total: 0,
+        },
         opponents: {},
       });
     }
@@ -139,6 +156,33 @@ export class Logger {
       }
     }
 
+    // Process invalid moves from match files
+    const overallInvalidMoves = {
+      blank: 0,
+      invalid_syntax: 0,
+      outside_board: 0,
+      occupied_cell: 0,
+      negative_coordinates: 0,
+      total: 0,
+    };
+
+    for (const outcome of outcomes) {
+      const matchResult = await this.loadMatchResult(outcome.matchFile);
+      if (matchResult && matchResult.invalidMoves) {
+        for (const invalidMove of matchResult.invalidMoves) {
+          const modelId =
+            invalidMove.player === "X" ? matchResult.X : matchResult.O;
+          const stats = modelStats.get(modelId);
+          if (stats) {
+            stats.invalidMoves[invalidMove.type]++;
+            stats.invalidMoves.total++;
+            overallInvalidMoves[invalidMove.type]++;
+            overallInvalidMoves.total++;
+          }
+        }
+      }
+    }
+
     // Calculate win rates
     for (const stats of modelStats.values()) {
       const validGames = stats.totalMatches - stats.invalidGames;
@@ -166,6 +210,7 @@ export class Logger {
       totalMatches: expectedTotalMatches || outcomes.length,
       completedMatches,
       invalidMatches: outcomes.filter((o) => o.winner === "invalid").length,
+      overallInvalidMoves,
       models: Array.from(modelStats.values()),
       rankings,
       timestamp: Date.now(),

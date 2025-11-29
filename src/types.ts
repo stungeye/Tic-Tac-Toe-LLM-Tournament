@@ -54,6 +54,16 @@ export interface MatchResult {
   winnerModel?: string;
   moves: GameMove[];
   conversations: APIConversation[];
+  invalidMoves: Array<{
+    player: Player;
+    type:
+      | "blank"
+      | "invalid_syntax"
+      | "outside_board"
+      | "occupied_cell"
+      | "negative_coordinates";
+    details?: string;
+  }>;
   duration: number;
   invalidReason?: string;
   timestamp: number;
@@ -78,6 +88,14 @@ export interface ModelStats {
   draws: number;
   invalidGames: number;
   winRate: number;
+  invalidMoves: {
+    blank: number;
+    invalid_syntax: number;
+    outside_board: number;
+    occupied_cell: number;
+    negative_coordinates: number;
+    total: number;
+  };
   opponents: Record<
     string,
     {
@@ -93,6 +111,14 @@ export interface TournamentStats {
   totalMatches: number;
   completedMatches: number;
   invalidMatches: number;
+  overallInvalidMoves: {
+    blank: number;
+    invalid_syntax: number;
+    outside_board: number;
+    occupied_cell: number;
+    negative_coordinates: number;
+    total: number;
+  };
   models: ModelStats[];
   rankings: Array<{
     modelId: string;

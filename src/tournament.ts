@@ -65,6 +65,7 @@ export class TournamentManager {
       winner: "draw",
       moves: [],
       conversations: [],
+      invalidMoves: [],
       duration: 0,
       timestamp: startTime,
     };
@@ -85,7 +86,11 @@ export class TournamentManager {
       );
 
       try {
-        const { move, conversation } = await aiPlayer.makeMove(
+        const {
+          move,
+          conversation,
+          invalidReason: parseError,
+        } = await aiPlayer.makeMove(
           boardState,
           moveHistory,
           this.config.tournament.timeoutMs
@@ -94,15 +99,35 @@ export class TournamentManager {
         result.conversations.push(conversation);
 
         if (!move) {
-          result.invalidReason = `${currentPlayer} failed to provide a valid move`;
-          console.log(`  ❌ Invalid move from ${aiPlayer.getModelName()}`);
+          const invalidType = parseError as
+            | "blank"
+            | "invalid_syntax"
+            | "outside_board"
+            | "occupied_cell"
+            | "negative_coordinates";
+          result.invalidMoves.push({
+            player: currentPlayer,
+            type: invalidType,
+            details: `${parseError || "failed to provide a valid move"}`,
+          });
+          result.invalidReason = `${currentPlayer}: ${
+            parseError || "failed to provide a valid move"
+          }`;
+          console.log(
+            `  ❌ Invalid move (${parseError}) from ${aiPlayer.getModelName()}`
+          );
           break;
         }
 
         console.log(`  ${currentPlayer}: ${move.row},${move.col}`);
 
         if (!game.makeMove(move.row, move.col)) {
-          result.invalidReason = `${currentPlayer} made an invalid move: ${move.row},${move.col}`;
+          result.invalidMoves.push({
+            player: currentPlayer,
+            type: "occupied_cell",
+            details: `(${move.row},${move.col})`,
+          });
+          result.invalidReason = `${currentPlayer}: occupied_cell (${move.row},${move.col})`;
           console.log(
             `  ❌ Invalid move coordinates from ${aiPlayer.getModelName()}`
           );
@@ -176,10 +201,26 @@ export class TournamentManager {
         let apiRetries = 0;
         let backoffTime = 1000; // Start with 1 second
         let matchCompleted = false;
+        let accumulatedInvalidMoves: Array<{
+          player: Player;
+          type:
+            | "blank"
+            | "invalid_syntax"
+            | "outside_board"
+            | "occupied_cell"
+            | "negative_coordinates";
+          details?: string;
+        }> = [];
 
         while (!matchCompleted) {
           try {
             const result = await this.playMatch(xModel, oModel);
+
+            // Add accumulated invalid moves to the result
+            result.invalidMoves = [
+              ...result.invalidMoves,
+              ...accumulatedInvalidMoves,
+            ];
 
             // Log the match
             await this.logger.logMatch(result);
@@ -207,15 +248,23 @@ export class TournamentManager {
               );
             } else {
               // Invalid match - check if it's a simple invalid move or API error
-              const isInvalidMove =
-                result.invalidReason?.includes("invalid move") ||
-                result.invalidReason?.includes(
-                  "failed to provide a valid move"
-                );
+              const invalidMoveTypes = [
+                "blank",
+                "invalid_syntax",
+                "outside_board",
+                "occupied_cell",
+                "negative_coordinates",
+              ];
+
+              const isInvalidMove = invalidMoveTypes.some((type) =>
+                result.invalidReason?.includes(type)
+              );
 
               if (isInvalidMove) {
                 // Simple invalid move - retry immediately without counting as API failure
-                console.log(`🔄 Invalid move, retrying immediately...`);
+                console.log(
+                  `🔄 Invalid move (${result.invalidReason}), retrying immediately...`
+                );
                 continue;
               } else {
                 // API error - count as failure
@@ -297,6 +346,37 @@ export class TournamentManager {
         `   W: ${model.wins} | L: ${model.losses} | D: ${model.draws} | I: ${model.invalidGames}`
       );
       console.log();
+    }
+
+    console.log("❌ INVALID MOVES ANALYSIS:");
+    console.log("-".repeat(50));
+    console.log(`📊 Overall Invalid Moves: ${stats.overallInvalidMoves.total}`);
+    console.log(`   Blank responses: ${stats.overallInvalidMoves.blank}`);
+    console.log(
+      `   Invalid syntax: ${stats.overallInvalidMoves.invalid_syntax}`
+    );
+    console.log(`   Outside board: ${stats.overallInvalidMoves.outside_board}`);
+    console.log(
+      `   Occupied cells: ${stats.overallInvalidMoves.occupied_cell}`
+    );
+    console.log(
+      `   Negative coords: ${stats.overallInvalidMoves.negative_coordinates}`
+    );
+    console.log();
+
+    for (const model of stats.models) {
+      if (model.invalidMoves.total > 0) {
+        console.log(
+          `${model.modelId}: ${model.invalidMoves.total} invalid moves`
+        );
+        console.log(
+          `   Blank: ${model.invalidMoves.blank} | Syntax: ${model.invalidMoves.invalid_syntax} | Outside: ${model.invalidMoves.outside_board}`
+        );
+        console.log(
+          `   Occupied: ${model.invalidMoves.occupied_cell} | Negative: ${model.invalidMoves.negative_coordinates}`
+        );
+        console.log();
+      }
     }
 
     console.log("🆚 HEAD-TO-HEAD RECORDS:");

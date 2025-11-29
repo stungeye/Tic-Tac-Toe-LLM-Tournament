@@ -22,6 +22,7 @@ export class AIPlayer {
   ): Promise<{
     move: { row: number; col: number } | null;
     conversation: APIConversation;
+    invalidReason?: string;
   }> {
     const messages = [
       {
@@ -76,11 +77,11 @@ export class AIPlayer {
       conversation.response = content || "";
 
       if (!content) {
-        return { move: null, conversation };
+        return { move: null, conversation, invalidReason: "blank" };
       }
 
-      const move = this.parseMove(content);
-      return { move, conversation };
+      const { move, invalidReason } = this.parseMove(content);
+      return { move, conversation, invalidReason };
     } catch (error) {
       conversation.error =
         error instanceof Error ? error.message : String(error);
@@ -100,7 +101,10 @@ export class AIPlayer {
     return message;
   }
 
-  private parseMove(response: string): { row: number; col: number } | null {
+  private parseMove(response: string): {
+    move: { row: number; col: number } | null;
+    invalidReason?: string;
+  } {
     // Look for patterns like "1,2" or "1, 2" or "(1,2)"
     const patterns = [
       /(\d),\s*(\d)/,
@@ -116,13 +120,26 @@ export class AIPlayer {
         const row = parseInt(match[1], 10);
         const col = parseInt(match[2], 10);
 
-        if (row >= 0 && row <= 2 && col >= 0 && col <= 2) {
-          return { row, col };
+        // Check for negative coordinates
+        if (row < 0 || col < 0) {
+          return { move: null, invalidReason: "negative_coordinates" };
         }
+
+        // Check for coordinates outside the board
+        if (row > 2 || col > 2) {
+          return { move: null, invalidReason: "outside_board" };
+        }
+
+        return { move: { row, col } };
       }
     }
 
-    return null;
+    // Check if response contains numbers but in wrong format
+    if (/\d/.test(response)) {
+      return { move: null, invalidReason: "invalid_syntax" };
+    }
+
+    return { move: null, invalidReason: "invalid_syntax" };
   }
 
   getModelId(): string {
