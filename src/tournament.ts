@@ -99,23 +99,31 @@ export class TournamentManager {
         result.conversations.push(conversation);
 
         if (!move) {
-          const invalidType = parseError as
-            | "blank"
-            | "invalid_syntax"
-            | "outside_board"
-            | "occupied_cell"
-            | "negative_coordinates";
-          result.invalidMoves.push({
-            player: currentPlayer,
-            type: invalidType,
-            details: `${parseError || "failed to provide a valid move"}`,
-          });
-          result.invalidReason = `${currentPlayer}: ${
-            parseError || "failed to provide a valid move"
-          }`;
-          console.log(
-            `  ❌ Invalid move (${parseError}) from ${aiPlayer.getModelName()}`
-          );
+          if (parseError) {
+            const invalidDetails =
+              conversation.response && conversation.response.trim().length > 0
+                ? conversation.response
+                : parseError;
+            result.invalidMoves.push({
+              player: currentPlayer,
+              type: parseError,
+              details: invalidDetails,
+            });
+            result.invalidReason = `${currentPlayer}: ${parseError}`;
+            console.log(
+              `  ❌ Invalid move (${parseError}) from ${aiPlayer.getModelName()}`
+            );
+          } else {
+            const apiError = conversation.error
+              ? `api_error - ${conversation.error}`
+              : "api_error";
+            result.invalidReason = `${currentPlayer}: ${apiError}`;
+            console.log(
+              `  ❌ Error from ${aiPlayer.getModelName()}: ${
+                result.invalidReason
+              }`
+            );
+          }
           break;
         }
 
@@ -201,26 +209,10 @@ export class TournamentManager {
         let apiRetries = 0;
         let backoffTime = 1000; // Start with 1 second
         let matchCompleted = false;
-        let accumulatedInvalidMoves: Array<{
-          player: Player;
-          type:
-            | "blank"
-            | "invalid_syntax"
-            | "outside_board"
-            | "occupied_cell"
-            | "negative_coordinates";
-          details?: string;
-        }> = [];
 
         while (!matchCompleted) {
           try {
             const result = await this.playMatch(xModel, oModel);
-
-            // Add accumulated invalid moves to the result
-            result.invalidMoves = [
-              ...result.invalidMoves,
-              ...accumulatedInvalidMoves,
-            ];
 
             // Log the match
             await this.logger.logMatch(result);

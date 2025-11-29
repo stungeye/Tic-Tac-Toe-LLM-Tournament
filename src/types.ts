@@ -28,6 +28,12 @@ export interface LoggingConfig {
 export type Player = "X" | "O";
 export type CellValue = Player | null;
 export type Board = CellValue[][];
+export type InvalidMoveType =
+  | "blank"
+  | "invalid_syntax"
+  | "outside_board"
+  | "occupied_cell"
+  | "negative_coordinates";
 
 export interface GameMove {
   player: Player;
@@ -56,12 +62,7 @@ export interface MatchResult {
   conversations: APIConversation[];
   invalidMoves: Array<{
     player: Player;
-    type:
-      | "blank"
-      | "invalid_syntax"
-      | "outside_board"
-      | "occupied_cell"
-      | "negative_coordinates";
+    type: InvalidMoveType;
     details?: string;
   }>;
   duration: number;

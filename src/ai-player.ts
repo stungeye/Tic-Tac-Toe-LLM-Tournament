@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { APIConversation, Model } from "./types.js";
+import type { APIConversation, InvalidMoveType, Model } from "./types.js";
 
 export class AIPlayer {
   private openai: OpenAI;
@@ -22,7 +22,7 @@ export class AIPlayer {
   ): Promise<{
     move: { row: number; col: number } | null;
     conversation: APIConversation;
-    invalidReason?: string;
+    invalidReason?: InvalidMoveType;
   }> {
     const messages = [
       {
@@ -103,29 +103,30 @@ export class AIPlayer {
 
   private parseMove(response: string): {
     move: { row: number; col: number } | null;
-    invalidReason?: string;
+    invalidReason?: InvalidMoveType;
   } {
     // Look for patterns like "1,2" or "1, 2" or "(1,2)"
     const patterns = [
-      /(\d),\s*(\d)/,
-      /\((\d),\s*(\d)\)/,
-      /(\d)\s*,\s*(\d)/,
-      /row\s*(\d).*col\s*(\d)/i,
-      /(\d)\s+(\d)/,
+      /row\s*(-?\d+)\D+col\s*(-?\d+)/i,
+      /\((-?\d+)\s*,\s*(-?\d+)\)/,
+      /(-?\d+)\s*,\s*(-?\d+)/,
+      /(-?\d+)\s+(-?\d+)/,
     ];
 
     for (const pattern of patterns) {
       const match = response.match(pattern);
       if (match) {
-        const row = parseInt(match[1], 10);
-        const col = parseInt(match[2], 10);
+        const row = Number.parseInt(match[1], 10);
+        const col = Number.parseInt(match[2], 10);
 
-        // Check for negative coordinates
+        if (Number.isNaN(row) || Number.isNaN(col)) {
+          return { move: null, invalidReason: "invalid_syntax" };
+        }
+
         if (row < 0 || col < 0) {
           return { move: null, invalidReason: "negative_coordinates" };
         }
 
-        // Check for coordinates outside the board
         if (row > 2 || col > 2) {
           return { move: null, invalidReason: "outside_board" };
         }
@@ -134,7 +135,6 @@ export class AIPlayer {
       }
     }
 
-    // Check if response contains numbers but in wrong format
     if (/\d/.test(response)) {
       return { move: null, invalidReason: "invalid_syntax" };
     }
