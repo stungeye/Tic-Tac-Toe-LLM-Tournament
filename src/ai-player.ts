@@ -43,13 +43,28 @@ export class AIPlayer {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
+      // Determine which token parameter to use based on model
+      const usesMaxCompletionTokens =
+        this.model.id.startsWith("gpt-5") ||
+        this.model.id.startsWith("o3") ||
+        this.model.id.startsWith("o4");
+
+      const requestParams: any = {
+        model: this.model.id,
+        messages,
+        // Use temperature=1 for all models to ensure fair comparison
+        // (newer models only support default temperature of 1)
+        temperature: 1,
+      };
+
+      if (usesMaxCompletionTokens) {
+        requestParams.max_completion_tokens = 50;
+      } else {
+        requestParams.max_tokens = 50;
+      }
+
       const response = await this.openai.chat.completions.create(
-        {
-          model: this.model.id,
-          messages,
-          max_tokens: 50,
-          temperature: 0.7,
-        },
+        requestParams,
         {
           signal: controller.signal,
         }
