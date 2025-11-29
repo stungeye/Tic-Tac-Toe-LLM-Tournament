@@ -64,7 +64,7 @@ export class Logger {
     }
   }
 
-  async generateStatistics(models: string[]): Promise<TournamentStats> {
+  async generateStatistics(models: string[], expectedTotalMatches?: number): Promise<TournamentStats> {
     const outcomes = await this.loadOutcomes();
 
     const modelStats: Map<string, ModelStats> = new Map();
@@ -155,9 +155,11 @@ export class Logger {
         totalWins: stats.wins,
       }));
 
+    const completedMatches = outcomes.filter((o) => o.winner !== "invalid").length;
+    
     const tournamentStats: TournamentStats = {
-      totalMatches: outcomes.length,
-      completedMatches: outcomes.filter((o) => o.winner !== "invalid").length,
+      totalMatches: expectedTotalMatches || outcomes.length,
+      completedMatches,
       invalidMatches: outcomes.filter((o) => o.winner === "invalid").length,
       models: Array.from(modelStats.values()),
       rankings,

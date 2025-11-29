@@ -250,8 +250,11 @@ export class TournamentManager {
     console.log("📈 Generating final statistics...\n");
 
     // Generate and display final statistics
+    const allMatchups = this.generateMatchups();
+    const expectedTotalMatches = allMatchups.length * this.config.tournament.rounds;
     const stats = await this.logger.generateStatistics(
-      this.models.map((m) => m.id)
+      this.models.map((m) => m.id),
+      expectedTotalMatches
     );
     this.displayStatistics(stats);
   }
