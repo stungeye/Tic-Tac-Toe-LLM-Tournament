@@ -65,9 +65,9 @@ export class AIPlayer {
       };
 
       if (usesMaxCompletionTokens) {
-        requestParams.max_completion_tokens = 50;
+        requestParams.max_completion_tokens = 300;
       } else {
-        requestParams.max_tokens = 50;
+        requestParams.max_tokens = 300;
       }
 
       const response = await this.openai.chat.completions.create(
@@ -108,7 +108,7 @@ export class AIPlayer {
     }
 
     message +=
-      'Make your move by responding with coordinates in the format "row,col" (e.g., "1,2").';
+      'Make your move by responding with coordinates in the format "row,col" (e.g., "1,2"). You may think through your strategy, but place your final move on the last line.';
     return message;
   }
 
@@ -116,7 +116,11 @@ export class AIPlayer {
     move: { row: number; col: number } | null;
     invalidReason?: InvalidMoveType;
   } {
-    // Look for patterns like "1,2" or "1, 2" or "(1,2)"
+    // Extract the last non-empty line for chain-of-thought support
+    const lines = response.trim().split("\n");
+    const lastLine = lines[lines.length - 1].trim();
+
+    // Look for patterns like "1,2" or "1, 2" or "(1,2)" in the last line only
     const patterns = [
       /row\s*(-?\d+)\D+col\s*(-?\d+)/i,
       /\((-?\d+)\s*,\s*(-?\d+)\)/,
@@ -125,7 +129,7 @@ export class AIPlayer {
     ];
 
     for (const pattern of patterns) {
-      const match = response.match(pattern);
+      const match = lastLine.match(pattern);
       if (match) {
         const row = Number.parseInt(match[1], 10);
         const col = Number.parseInt(match[2], 10);
@@ -146,7 +150,7 @@ export class AIPlayer {
       }
     }
 
-    if (/\d/.test(response)) {
+    if (/\d/.test(lastLine)) {
       return { move: null, invalidReason: "invalid_syntax" };
     }
 
