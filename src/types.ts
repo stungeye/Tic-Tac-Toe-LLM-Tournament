@@ -17,6 +17,7 @@ export interface TournamentConfig {
   timeoutMs: number;
   maxRetries: number;
   backoffMultiplier: number;
+  maxTokens: number;
 }
 
 export interface LoggingConfig {

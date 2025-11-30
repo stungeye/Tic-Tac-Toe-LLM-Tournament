@@ -94,7 +94,8 @@ export class TournamentManager {
           currentPlayer,
           boardState,
           moveHistory,
-          this.config.tournament.timeoutMs
+          this.config.tournament.timeoutMs,
+          this.config.tournament.maxTokens
         );
 
         result.conversations.push(conversation);

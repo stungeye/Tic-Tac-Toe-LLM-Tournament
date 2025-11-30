@@ -24,7 +24,8 @@ export class AIPlayer {
     player: Player,
     boardState: string,
     moveHistory: string[],
-    timeoutMs: number
+    timeoutMs: number,
+    maxTokens: number
   ): Promise<{
     move: { row: number; col: number } | null;
     conversation: APIConversation;
@@ -65,9 +66,9 @@ export class AIPlayer {
       };
 
       if (usesMaxCompletionTokens) {
-        requestParams.max_completion_tokens = 300;
+        requestParams.max_completion_tokens = maxTokens;
       } else {
-        requestParams.max_tokens = 300;
+        requestParams.max_tokens = maxTokens;
       }
 
       const response = await this.openai.chat.completions.create(
@@ -103,12 +104,26 @@ export class AIPlayer {
     let message = `You are player ${player}.\n\n`;
     message += `Current board state:\n${boardState}\n\n`;
 
+    // Extract empty cells from the board state
+    const emptyCells: string[] = [];
+    const rows = boardState.split("\n");
+    rows.forEach((row, rowIndex) => {
+      const cells = row.split(" ");
+      cells.forEach((cell, colIndex) => {
+        if (cell === "-") {
+          emptyCells.push(`(${rowIndex},${colIndex})`);
+        }
+      });
+    });
+
+    message += `Available empty cells: ${emptyCells.join(" ")}\n\n`;
+
     if (moveHistory.length > 0) {
       message += `Move history:\n${moveHistory.join("\n")}\n\n`;
     }
 
     message +=
-      'Make your move by responding with coordinates in the format "row,col" (e.g., "1,2"). You may think through your strategy, but place your final move on the last line.';
+      "REMINDER: Only play in one of the empty cells listed above. Verify your chosen cell shows '-' on the board.";
     return message;
   }
 
