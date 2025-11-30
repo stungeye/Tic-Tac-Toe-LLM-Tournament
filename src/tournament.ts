@@ -62,7 +62,7 @@ export class TournamentManager {
       matchId,
       X: xModel.id,
       O: oModel.id,
-      winner: "draw",
+      winner: "invalid",
       moves: [],
       conversations: [],
       invalidMoves: [],

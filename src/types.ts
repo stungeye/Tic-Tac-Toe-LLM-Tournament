@@ -56,7 +56,7 @@ export interface MatchResult {
   matchId: string;
   X: string;
   O: string;
-  winner: Player | "draw";
+  winner: Player | "draw" | "invalid";
   winnerModel?: string;
   moves: GameMove[];
   conversations: APIConversation[];

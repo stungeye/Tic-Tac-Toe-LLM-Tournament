@@ -1,5 +1,10 @@
 import OpenAI from "openai";
-import type { APIConversation, InvalidMoveType, Model, Player } from "./types.js";
+import type {
+  APIConversation,
+  InvalidMoveType,
+  Model,
+  Player,
+} from "./types.js";
 
 export class AIPlayer {
   private openai: OpenAI;
@@ -90,7 +95,11 @@ export class AIPlayer {
     }
   }
 
-  private formatGameState(player: Player, boardState: string, moveHistory: string[]): string {
+  private formatGameState(
+    player: Player,
+    boardState: string,
+    moveHistory: string[]
+  ): string {
     let message = `You are player ${player}.\n\n`;
     message += `Current board state:\n${boardState}\n\n`;
 
