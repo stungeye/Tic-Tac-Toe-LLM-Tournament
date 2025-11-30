@@ -1,5 +1,5 @@
 import OpenAI from "openai";
-import type { APIConversation, InvalidMoveType, Model } from "./types.js";
+import type { APIConversation, InvalidMoveType, Model, Player } from "./types.js";
 
 export class AIPlayer {
   private openai: OpenAI;
@@ -16,6 +16,7 @@ export class AIPlayer {
   }
 
   async makeMove(
+    player: Player,
     boardState: string,
     moveHistory: string[],
     timeoutMs: number
@@ -31,7 +32,7 @@ export class AIPlayer {
       },
       {
         role: "user" as const,
-        content: this.formatGameState(boardState, moveHistory),
+        content: this.formatGameState(player, boardState, moveHistory),
       },
     ];
 
@@ -89,8 +90,9 @@ export class AIPlayer {
     }
   }
 
-  private formatGameState(boardState: string, moveHistory: string[]): string {
-    let message = `Current board state:\n${boardState}\n\n`;
+  private formatGameState(player: Player, boardState: string, moveHistory: string[]): string {
+    let message = `You are player ${player}.\n\n`;
+    message += `Current board state:\n${boardState}\n\n`;
 
     if (moveHistory.length > 0) {
       message += `Move history:\n${moveHistory.join("\n")}\n\n`;

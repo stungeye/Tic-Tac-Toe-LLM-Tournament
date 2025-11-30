@@ -91,6 +91,7 @@ export class TournamentManager {
           conversation,
           invalidReason: parseError,
         } = await aiPlayer.makeMove(
+          currentPlayer,
           boardState,
           moveHistory,
           this.config.tournament.timeoutMs
