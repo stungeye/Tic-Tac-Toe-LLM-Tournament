@@ -318,10 +318,16 @@ export class TournamentManager {
     const allMatchups = this.generateMatchups();
     const expectedTotalMatches =
       allMatchups.length * this.config.tournament.rounds;
-    
-    // Create full model IDs including API mode
-    const modelIds = this.models.map((m) => `${m.id}-${m.apiMode}`);
-    
+
+    // Create full model IDs including API mode and reasoning effort (if applicable)
+    const modelIds = this.models.map((m) => {
+      let id = `${m.id}-${m.apiMode}`;
+      if (m.apiMode === "responses" && m.reasoningEffort) {
+        id += `-${m.reasoningEffort}`;
+      }
+      return id;
+    });
+
     const stats = await this.logger.generateStatistics(
       modelIds,
       expectedTotalMatches

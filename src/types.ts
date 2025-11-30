@@ -11,6 +11,7 @@ export interface Model {
   apiMode: "chat" | "responses";
   apiKey: string;
   maxTokens: number;
+  reasoningEffort?: "low" | "medium" | "high";
 }
 
 export interface TournamentConfig {

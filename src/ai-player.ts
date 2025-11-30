@@ -69,7 +69,7 @@ export class AIPlayer {
           {
             model: this.model.id,
             input,
-            reasoning: { effort: "medium" },
+            reasoning: { effort: this.model.reasoningEffort || "medium" },
             max_output_tokens: maxTokens,
           },
           {
@@ -211,11 +211,19 @@ export class AIPlayer {
   }
 
   getModelId(): string {
-    // Include API mode in ID to distinguish same model used in different modes
-    return `${this.model.id}-${this.model.apiMode}`;
+    // Include API mode and reasoning effort (if applicable) to distinguish variants
+    let id = `${this.model.id}-${this.model.apiMode}`;
+    if (this.model.apiMode === "responses" && this.model.reasoningEffort) {
+      id += `-${this.model.reasoningEffort}`;
+    }
+    return id;
   }
 
   getModelName(): string {
-    return `${this.model.name} (${this.model.apiMode})`;
+    let name = `${this.model.name} (${this.model.apiMode})`;
+    if (this.model.apiMode === "responses" && this.model.reasoningEffort) {
+      name += ` [${this.model.reasoningEffort}]`;
+    }
+    return name;
   }
 }
