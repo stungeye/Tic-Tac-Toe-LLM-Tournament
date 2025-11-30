@@ -48,8 +48,16 @@ export class TournamentManager {
 
   private async playMatch(xModel: Model, oModel: Model): Promise<MatchResult> {
     const game = new TicTacToeGame();
-    const xPlayer = new AIPlayer(xModel, this.config.systemPrompt);
-    const oPlayer = new AIPlayer(oModel, this.config.systemPrompt);
+    const xPrompt =
+      xModel.apiMode === "responses" && this.config.responsesSystemPrompt
+        ? this.config.responsesSystemPrompt
+        : this.config.systemPrompt;
+    const oPrompt =
+      oModel.apiMode === "responses" && this.config.responsesSystemPrompt
+        ? this.config.responsesSystemPrompt
+        : this.config.systemPrompt;
+    const xPlayer = new AIPlayer(xModel, xPrompt);
+    const oPlayer = new AIPlayer(oModel, oPrompt);
 
     const matchId = this.logger.generateMatchId(
       xPlayer.getModelId(),

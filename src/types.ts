@@ -1,5 +1,6 @@
 export interface Config {
   systemPrompt: string;
+  responsesSystemPrompt?: string;
   models: Model[];
   tournament: TournamentConfig;
   logging: LoggingConfig;
