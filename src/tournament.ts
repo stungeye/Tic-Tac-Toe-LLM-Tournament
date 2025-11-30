@@ -52,16 +52,16 @@ export class TournamentManager {
     const oPlayer = new AIPlayer(oModel, this.config.systemPrompt);
 
     const matchId = this.logger.generateMatchId(
-      xModel.id,
-      oModel.id,
+      xPlayer.getModelId(),
+      oPlayer.getModelId(),
       Date.now()
     );
     const startTime = Date.now();
 
     const result: MatchResult = {
       matchId,
-      X: xModel.id,
-      O: oModel.id,
+      X: xPlayer.getModelId(),
+      O: oPlayer.getModelId(),
       winner: "invalid",
       moves: [],
       conversations: [],
@@ -86,6 +86,7 @@ export class TournamentManager {
       );
 
       try {
+        const currentModel = currentPlayer === "X" ? xModel : oModel;
         const {
           move,
           conversation,
@@ -95,7 +96,7 @@ export class TournamentManager {
           boardState,
           moveHistory,
           this.config.tournament.timeoutMs,
-          this.config.tournament.maxTokens
+          currentModel.maxTokens
         );
 
         result.conversations.push(conversation);
@@ -119,6 +120,11 @@ export class TournamentManager {
             const apiError = conversation.error
               ? `api_error - ${conversation.error}`
               : "api_error";
+            result.invalidMoves.push({
+              player: currentPlayer,
+              type: "api_error",
+              details: conversation.error || "Unknown API error",
+            });
             result.invalidReason = `${currentPlayer}: ${apiError}`;
             console.log(
               `  ❌ Error from ${aiPlayer.getModelName()}: ${
@@ -312,8 +318,12 @@ export class TournamentManager {
     const allMatchups = this.generateMatchups();
     const expectedTotalMatches =
       allMatchups.length * this.config.tournament.rounds;
+    
+    // Create full model IDs including API mode
+    const modelIds = this.models.map((m) => `${m.id}-${m.apiMode}`);
+    
     const stats = await this.logger.generateStatistics(
-      this.models.map((m) => m.id),
+      modelIds,
       expectedTotalMatches
     );
     this.displayStatistics(stats);
@@ -356,6 +366,7 @@ export class TournamentManager {
     console.log(
       `   Negative coords: ${stats.overallInvalidMoves.negative_coordinates}`
     );
+    console.log(`   API errors: ${stats.overallInvalidMoves.api_error}`);
     console.log();
 
     for (const model of stats.models) {
@@ -367,7 +378,7 @@ export class TournamentManager {
           `   Blank: ${model.invalidMoves.blank} | Syntax: ${model.invalidMoves.invalid_syntax} | Outside: ${model.invalidMoves.outside_board}`
         );
         console.log(
-          `   Occupied: ${model.invalidMoves.occupied_cell} | Negative: ${model.invalidMoves.negative_coordinates}`
+          `   Occupied: ${model.invalidMoves.occupied_cell} | Negative: ${model.invalidMoves.negative_coordinates} | API: ${model.invalidMoves.api_error}`
         );
         console.log();
       }

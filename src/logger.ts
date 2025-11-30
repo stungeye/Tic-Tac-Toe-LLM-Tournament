@@ -97,6 +97,7 @@ export class Logger {
           outside_board: 0,
           occupied_cell: 0,
           negative_coordinates: 0,
+          api_error: 0,
           total: 0,
         },
         opponents: {},
@@ -163,6 +164,7 @@ export class Logger {
       outside_board: 0,
       occupied_cell: 0,
       negative_coordinates: 0,
+      api_error: 0,
       total: 0,
     };
 

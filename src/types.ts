@@ -8,8 +8,9 @@ export interface Config {
 export interface Model {
   id: string;
   name: string;
-  apiUrl: string;
+  apiMode: "chat" | "responses";
   apiKey: string;
+  maxTokens: number;
 }
 
 export interface TournamentConfig {
@@ -17,7 +18,6 @@ export interface TournamentConfig {
   timeoutMs: number;
   maxRetries: number;
   backoffMultiplier: number;
-  maxTokens: number;
 }
 
 export interface LoggingConfig {
@@ -34,7 +34,8 @@ export type InvalidMoveType =
   | "invalid_syntax"
   | "outside_board"
   | "occupied_cell"
-  | "negative_coordinates";
+  | "negative_coordinates"
+  | "api_error";
 
 export interface GameMove {
   player: Player;
@@ -96,6 +97,7 @@ export interface ModelStats {
     outside_board: number;
     occupied_cell: number;
     negative_coordinates: number;
+    api_error: number;
     total: number;
   };
   opponents: Record<
@@ -119,6 +121,7 @@ export interface TournamentStats {
     outside_board: number;
     occupied_cell: number;
     negative_coordinates: number;
+    api_error: number;
     total: number;
   };
   models: ModelStats[];

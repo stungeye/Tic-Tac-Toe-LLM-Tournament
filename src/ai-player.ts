@@ -16,7 +16,6 @@ export class AIPlayer {
     this.systemPrompt = systemPrompt;
     this.openai = new OpenAI({
       apiKey: model.apiKey,
-      baseURL: model.apiUrl.replace("/chat/completions", ""),
     });
   }
 
@@ -51,36 +50,65 @@ export class AIPlayer {
       const controller = new AbortController();
       const timeoutId = setTimeout(() => controller.abort(), timeoutMs);
 
-      // Determine which token parameter to use based on model
-      const usesMaxCompletionTokens =
-        this.model.id.startsWith("gpt-5") ||
-        this.model.id.startsWith("o3") ||
-        this.model.id.startsWith("o4");
+      let content: string | undefined;
 
-      const requestParams: any = {
-        model: this.model.id,
-        messages,
-        // Use temperature=1 for all models to ensure fair comparison
-        // (newer models only support default temperature of 1)
-        temperature: 1,
-      };
+      if (this.model.apiMode === "responses") {
+        // Use responses API for GPT-5 models
+        const input = [
+          {
+            role: "developer" as const,
+            content: this.systemPrompt,
+          },
+          {
+            role: "user" as const,
+            content: this.formatGameState(player, boardState, moveHistory),
+          },
+        ];
 
-      if (usesMaxCompletionTokens) {
-        requestParams.max_completion_tokens = maxTokens;
+        const response = await this.openai.responses.create(
+          {
+            model: this.model.id,
+            input,
+            reasoning: { effort: "medium" },
+            max_output_tokens: maxTokens,
+          },
+          {
+            signal: controller.signal,
+          }
+        );
+
+        clearTimeout(timeoutId);
+        content = response.output_text?.trim();
       } else {
-        requestParams.max_tokens = maxTokens;
+        // Use chat completions API for older models
+        const usesMaxCompletionTokens =
+          this.model.id.startsWith("gpt-5") ||
+          this.model.id.startsWith("o3") ||
+          this.model.id.startsWith("o4");
+
+        const requestParams: any = {
+          model: this.model.id,
+          messages,
+          temperature: 1,
+        };
+
+        if (usesMaxCompletionTokens) {
+          requestParams.max_completion_tokens = maxTokens;
+        } else {
+          requestParams.max_tokens = maxTokens;
+        }
+
+        const response = await this.openai.chat.completions.create(
+          requestParams,
+          {
+            signal: controller.signal,
+          }
+        );
+
+        clearTimeout(timeoutId);
+        content = response.choices[0]?.message?.content?.trim();
       }
 
-      const response = await this.openai.chat.completions.create(
-        requestParams,
-        {
-          signal: controller.signal,
-        }
-      );
-
-      clearTimeout(timeoutId);
-
-      const content = response.choices[0]?.message?.content?.trim();
       conversation.response = content || "";
 
       if (!content) {
@@ -90,8 +118,18 @@ export class AIPlayer {
       const { move, invalidReason } = this.parseMove(content);
       return { move, conversation, invalidReason };
     } catch (error) {
-      conversation.error =
+      const errorMessage =
         error instanceof Error ? error.message : String(error);
+      const errorName = error instanceof Error ? error.name : "UnknownError";
+
+      // Provide more detailed error information
+      conversation.error = `[${this.model.apiMode}] ${errorName}: ${errorMessage}`;
+
+      // Check if it was a timeout/abort
+      if (errorName === "AbortError" || errorMessage.includes("aborted")) {
+        conversation.error += ` (timeout after ${timeoutMs}ms)`;
+      }
+
       return { move: null, conversation };
     }
   }
@@ -173,10 +211,11 @@ export class AIPlayer {
   }
 
   getModelId(): string {
-    return this.model.id;
+    // Include API mode in ID to distinguish same model used in different modes
+    return `${this.model.id}-${this.model.apiMode}`;
   }
 
   getModelName(): string {
-    return this.model.name;
+    return `${this.model.name} (${this.model.apiMode})`;
   }
 }
