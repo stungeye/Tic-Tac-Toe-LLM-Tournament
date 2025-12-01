@@ -10,6 +10,7 @@
     "start": "node --loader ts-node/esm src/main.ts",
     "tournament": "tsx src/main.ts",
     "list-models": "tsx src/list-models.ts",
+    "analyze": "tsx src/analyze-results.ts",
     "clear-logs": "rm -rf logs",
     "archive-logs": "if [ -d logs ]; then tar -czf \"logs-archive-$(date +%Y%m%d-%H%M%S).tar.gz\" logs && echo \"Archived logs to logs-archive-$(date +%Y%m%d-%H%M%S).tar.gz\"; else echo \"No logs directory to archive\"; fi"
   },
