@@ -11,6 +11,10 @@ This is a TypeScript project that runs tournaments between OpenAI language model
 - `src/logger.ts` - File logging and statistics generation
 - `src/types.ts` - TypeScript type definitions
 - `config.json` - Tournament configuration
+- logs/matches/\*.json - Individual match logs
+- logs/statistics.json - Tournament statistics summary
+- logs/outcomes.json - Match outcomes summary
+- logs_archive/\*.tar.gz - Archived logs
 
 ## Key Features
 
