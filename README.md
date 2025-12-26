@@ -1,6 +1,6 @@
-# TicTacToe AI Tournament
+# Tic-Tac-Toe LLM Tournament
 
-A TypeScript system that runs tournaments between different OpenAI language models playing tic-tac-toe against each other. Features support for both traditional chat completions and the new responses API (reasoning models).
+A CLI tool written in Typescript that runs tournaments between different OpenAI language models playing tic-tac-toe against each other. Features support for both traditional chat completions and the new responses API (reasoning models).
 
 ## Features
 
@@ -24,7 +24,17 @@ A TypeScript system that runs tournaments between different OpenAI language mode
 
 2. **Add your OpenAI API key** to `config.json`
 
-3. **Run the tournament**:
+3. **(Optional) List available models** to choose IDs:
+
+```bash
+# Pass key as an argument
+npm run list-models -- YOUR_OPENAI_API_KEY
+
+# Or with environment variable
+OPENAI_API_KEY=YOUR_OPENAI_API_KEY npm run list-models
+```
+
+4. **Run the tournament**:
    ```bash
    npm run tournament
    ```
@@ -32,6 +42,8 @@ A TypeScript system that runs tournaments between different OpenAI language mode
 ## Configuration
 
 ### Example Configuration
+
+Note: The example below shows two models for brevity. See `config.example.json` for a fuller template including multiple reasoning efforts.
 
 ```json
 {
@@ -99,6 +111,12 @@ A TypeScript system that runs tournaments between different OpenAI language mode
 - Invalid matches are retried up to maxRetries times
 - Timeouts cancel the current match
 
+## Security
+
+- `config.json` contains real API keys and is gitignored. Use `config.example.json` as your template, then copy to `config.json` locally.
+- Never commit API keys. Prefer environment variables (e.g., `OPENAI_API_KEY`) or local-only `config.json`.
+- If a key is ever committed, rotate it in the OpenAI dashboard.
+
 ## Output Files
 
 The system generates several output files in the `logs/` directory:
@@ -117,21 +135,7 @@ Example filename: `gpt-5.1-chat-vs-gpt-5.1-responses-medium-1764543110834.json`
 
 ### Outcomes Log (`logs/outcomes.json`)
 
-Consolidated list of all match outcomes:
-
-```json
-[
-  {
-    "matchId": "gpt-5.1-chat-vs-gpt-5.1-responses-medium-1764543110834",
-    "X": "gpt-5.1-chat",
-    "O": "gpt-5.1-responses-medium",
-    "winner": "O",
-    "winnerModel": "gpt-5.1-responses-medium",
-    "matchFile": "logs/matches/gpt-5.1-chat-vs-gpt-5.1-responses-medium-1764543110834.json",
-    "timestamp": 1764543110834
-  }
-]
-```
+Consolidated list of outcomes. Each entry includes: `matchId`, `X`, `O`, `winner`, optional `winnerModel`, optional `invalidReason`, `matchFile`, and `timestamp`.
 
 ### Statistics (`logs/statistics.json`)
 
@@ -143,6 +147,13 @@ Comprehensive tournament statistics:
 - Head-to-head records between all model pairs
 - Rankings sorted by win rate
 
+### Data Schema Overview
+
+- Match file (`logs/matches/*.json`):
+  - `matchId`, `X`, `O`, `winner`, `winnerModel?`, `moves[]`, `conversations[]`, `invalidMoves[]`, `invalidReason?`, `duration`, `timestamp`
+- Outcome entry (`logs/outcomes.json`):
+  - `matchId`, `X`, `O`, `winner`, `winnerModel?`, `invalidReason?`, `matchFile`, `timestamp`
+
 ## Available Scripts
 
 - `npm run tournament` - Run the full tournament
@@ -153,24 +164,20 @@ Comprehensive tournament statistics:
 - `npm run build` - Build the project
 - `npm run dev` - Start Vite dev server
 
-## Error Handling
+Development note: This repository is primarily a Node/CLI app. The Vite config targets Node builds; the dev server is not required to run tournaments and is only relevant if you add a web viewer.
 
-The system includes several layers of error handling:
+## Logs & Archiving
 
-1. **API Timeouts**: Configurable per-move timeout (120s for reasoning models)
-2. **Invalid Moves**: Automatic match invalidation and retry
-3. **API Errors**: Tracked as `api_error` type in statistics
-4. **Exponential Backoff**: Progressive delays between retries
-5. **Comprehensive Logging**: All errors logged with context
+- The live `logs/` directory is gitignored to avoid committing in progress tournaments.
+- Use `npm run archive-logs` to create timestamped archives under `logs_archive/` for sharing or publishing.
+- `npm run clear-logs` removes current logs to start fresh.
 
-Invalid move types tracked:
+## Errors & Troubleshooting
 
-- `blank`: Empty or whitespace-only responses
-- `invalid_syntax`: Response doesn't match "row,col" format
-- `outside_board`: Coordinates outside 0-2 range
-- `occupied_cell`: Move to already occupied cell
-- `negative_coordinates`: Negative row or column values
-- `api_error`: API timeout or error
+- Timeouts/API errors (`api_error`): increase `timeoutMs` (120s for reasoning) and `maxTokens` (responses: 2048–10000; chat: ≥512).
+- Invalid syntax: final line must be exactly `row,col` with no extra text.
+- Outside/occupied cells: ensure the model uses the provided empty-cell list and stays within 0–2.
+- Rate limit/auth: verify API key permissions; retries/backoff are handled by the tournament manager.
 
 ## Tournament Results
 
